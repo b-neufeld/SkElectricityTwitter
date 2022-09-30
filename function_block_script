@@ -1,0 +1,84 @@
+//This is the script in the function block in node-red
+
+// GENERATION CAPACITY (MW) FOR UTILIZATION CALC 
+// This is MANUALLY Updated from here: 
+// https://www.saskpower.com/Our-Power-Future/Our-Electricity/Electrical-System/System-Map
+// COULD query HTML manually in the future but requires more parsing than I can do right now. 
+hydro_cap = 5 + 8 + 10 + 111 + 255 + 289 + 186;
+coal_cap = 582 + 531 + 276
+naturalgas_cap = 41 + 228 + 289 + 135 + 90 + 78 + 234 + 623 + 89 + 353
+wind_cap = 10 + 20 + 23 + 175 + 26 + 150 + 11 + 200 + 2
+solar_cap = 10 + 10 + 49
+// note "other" includes Manitoba Hydro according to the "Where Your Power Comes From" page 
+other_cap = 290 + 5 + 5 + 5 + 5 + 34 
+
+// All this data is par
+// Need to loop through objects in the generationByType array and ensure they're 
+// saved in the right place
+for (var i = 0; i< msg.payload.PowerCacheData.generationByType.length; i++) {
+    generation_name = msg.payload.PowerCacheData.generationByType[i].type;
+    
+    if (generation_name == "Wind") {
+        //newMsg.payload.data.wind_percent_total = {};
+        wind_percent_total = msg.payload.PowerCacheData.generationByType[i].percentOfTotalGeneration
+        wind_generation_mw = msg.payload.PowerCacheData.generationByType[i].totalGenerationForType
+        wind_gwh = (wind_generation_mw * 24 / 1000).toFixed(1)
+        wind_util = (wind_generation_mw/wind_cap*100).toFixed(0)
+    }
+    
+    if (generation_name == "Solar") {
+        solar_percent_total = msg.payload.PowerCacheData.generationByType[i].percentOfTotalGeneration 
+        solar_generation_mw = msg.payload.PowerCacheData.generationByType[i].totalGenerationForType
+        solar_gwh = (solar_generation_mw * 24 / 1000).toFixed(1)
+        solar_util = (solar_generation_mw/solar_cap*100).toFixed(0)
+    }
+    
+    if (generation_name == "Coal") {
+        coal_percent_total = msg.payload.PowerCacheData.generationByType[i].percentOfTotalGeneration 
+        coal_generation_mw = msg.payload.PowerCacheData.generationByType[i].totalGenerationForType
+        coal_gwh = (coal_generation_mw * 24 / 1000).toFixed(1)
+        coal_util = (coal_generation_mw/coal_cap*100).toFixed(0)
+    }
+    
+    if (generation_name == "Natural Gas") {
+        naturalgas_percent_total = msg.payload.PowerCacheData.generationByType[i].percentOfTotalGeneration 
+        naturalgas_generation_mw = msg.payload.PowerCacheData.generationByType[i].totalGenerationForType
+        naturalgas_gwh = (naturalgas_generation_mw * 24 / 1000).toFixed(1)
+        naturalgas_util = (naturalgas_generation_mw/naturalgas_cap*100).toFixed(0)
+    }
+    
+    if (generation_name == "Hydro") {
+        hydro_percent_total = msg.payload.PowerCacheData.generationByType[i].percentOfTotalGeneration 
+        hydro_generation_mw = msg.payload.PowerCacheData.generationByType[i].totalGenerationForType
+        hydro_gwh = (hydro_generation_mw * 24 / 1000).toFixed(1)
+        hydro_util = (hydro_generation_mw/hydro_cap*100).toFixed(0)
+    }
+    
+    if (generation_name == "Other") {
+        other_percent_total = msg.payload.PowerCacheData.generationByType[i].percentOfTotalGeneration
+        other_generation_mw = msg.payload.PowerCacheData.generationByType[i].totalGenerationForType
+        other_gwh = (other_generation_mw * 24 / 1000).toFixed(1)
+        other_util = (other_generation_mw/other_cap*100).toFixed(0)
+    }
+}
+
+text01 = "SK Electricity Supply on ";
+text02 = msg.payload.SupplyDataText.toString();
+text03 = ":\n\nSource | GWh | %ofDay | %Util\n";
+text04 = "Coal🏭 | "+coal_gwh+" | "+coal_percent_total+"% | "+coal_util+"%\n"
+text05 = "NGas⛽ |  "+naturalgas_gwh+" | "+naturalgas_percent_total+"% | "+naturalgas_util+"%\n"
+text06 = "Wind🪁 | "+wind_gwh+" | "+wind_percent_total+"% | "+wind_util+"%\n"
+text07 = "Hydro🌊 | "+hydro_gwh+" | "+hydro_percent_total+"% | "+hydro_util+"%\n"
+text08 = "Solar🌞 | "+solar_gwh+" | "+solar_percent_total+"% | "+solar_util+"%\n"
+text09 = "Other❓ | "+other_gwh+" | "+other_percent_total+"% | "+other_util+"%\n\n"
+text10 = "Generated: "+(msg.payload.PowerCacheData.generation*24/1000).toFixed(1)+" GWh\n"
+if (msg.payload.PowerCacheData.netInterchange < 0) {
+    text11 = "Exported: "+(-msg.payload.PowerCacheData.netInterchange*24/1000).toFixed(1)+" GWh"
+} else {
+    text11 = "Imported: "+(msg.payload.PowerCacheData.netInterchange*24/1000).toFixed(1)+" GWh"
+}
+text12 = "\n\nFAQ in bio"
+
+msg.payload = text01+text02+text03+text04+text05+text06+text07+text08+text09+text10+text11+text12
+
+return msg;
